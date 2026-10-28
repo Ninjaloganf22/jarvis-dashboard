@@ -200,18 +200,51 @@ function setControlsEnabled(enabled){
 }
 async function spotifyCommand(path,method='PUT',body=null){
  const token=await getAccessToken();
- if(!token) throw new Error('Please reconnect Spotify');
+ if(!token) throw new Error('Your Spotify login has expired. Tap DISCONNECT, then reconnect Spotify.');
+ // Choose the active device, or fall back to an available Spotify Connect device.
+ let deviceId=null;
+ try{
+  const devicesResponse=await fetch('https://api.spotify.com/v1/me/player/devices',{
+   headers:{Authorization:'Bearer '+token}
+  });
+  if(devicesResponse.ok){
+   const devicesData=await devicesResponse.json();
+   const devices=devicesData.devices||[];
+   const device=devices.find(d=>d.is_active)||devices.find(d=>!d.is_restricted)||devices[0];
+   if(device&&device.id) deviceId=device.id;
+  }else if(devicesResponse.status===401){
+   localStorage.removeItem('jarvis_spotify_access_token');
+   throw new Error('Spotify login expired. Tap DISCONNECT and reconnect.');
+  }
+ }catch(e){
+  if(e.message&&e.message.includes('login expired')) throw e;
+ }
+ let commandPath=path;
+ if(deviceId){
+  commandPath+=(commandPath.includes('?')?'&':'?')+'device_id='+encodeURIComponent(deviceId);
+ }
  const options={method,headers:{Authorization:'Bearer '+token}};
  if(body!==null){
   options.headers['Content-Type']='application/json';
   options.body=JSON.stringify(body);
  }
- const response=await fetch('https://api.spotify.com/v1/me/player'+path,options);
- if(!response.ok && response.status!==204) {
+ const response=await fetch('https://api.spotify.com/v1/me/player'+commandPath,options);
+ if(!response.ok && response.status!==204){
   if(response.status===401) localStorage.removeItem('jarvis_spotify_access_token');
   let detail='';
-  try{const data=await response.json();detail=data.error&&data.error.message?data.error.message:'';}catch(e){}
-  throw new Error(detail||'Spotify returned '+response.status);
+  try{
+   const data=await response.json();
+   detail=(data.error&&data.error.message)||data.message||'';
+   if(data.error&&data.error.reason) detail+=' ('+data.error.reason+')';
+  }catch(e){}
+  if(response.status===403){
+   throw new Error(detail||'Spotify denied playback control. Disconnect and reconnect Jarvis to grant playback-control permission.');
+  }
+  if(response.status===404){
+   throw new Error(detail||'No Spotify playback device found. Open Spotify on your phone or tablet and start playing music.');
+  }
+  if(response.status===401) throw new Error('Spotify login expired. Tap DISCONNECT and reconnect.');
+  throw new Error('Spotify error '+response.status+(detail?': '+detail:'')+'.');
  }
 }
 async function runSpotifyCommand(action){
@@ -229,7 +262,7 @@ async function runSpotifyCommand(action){
   message.textContent='Command sent to Spotify.';
   setTimeout(loadNowPlaying,700);
  }catch(e){
-  message.textContent=e.message.includes('Premium')?'Spotify playback controls require Spotify Premium.':e.message.includes('No active device')?'Open Spotify on a device and start playback, then try again.':'Could not control Spotify. Make sure Spotify is open on an active device and reconnect if asked.';
+  message.textContent=e.message||'Could not control Spotify. Open Spotify on a device and try again.';
  }
 }
 playPauseButton.addEventListener('click',()=>runSpotifyCommand('toggle'));
