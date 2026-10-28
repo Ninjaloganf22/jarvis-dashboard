@@ -1,1 +1,95 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J.A.R.V.I.S.</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#050a13;color:#e8faff;font-family:Arial,sans-serif}
+main{max-width:900px;margin:auto;padding:24px}
+header{display:flex;justify-content:space-between;align-items:center;
+border-bottom:1px solid #16485b;padding-bottom:18px}
+h1{color:#48e5ff;letter-spacing:5px;font-size:25px}
+.status{color:#59ffb0;font-size:12px}
+.clock{font-size:clamp(48px,12vw,90px);font-weight:200;margin:35px 0 0}
+.date{color:#75a4b5;letter-spacing:3px}
+.panel{background:#0b1625;border:1px solid #16485b;
+border-radius:18px;padding:22px;margin-top:25px}
+.label{font-size:12px;letter-spacing:3px;color:#48e5ff}
+.track{display:flex;gap:20px;align-items:center;margin-top:18px}
+.art{width:150px;height:150px;object-fit:cover;background:#132638;
+border-radius:12px}
+.song{font-size:24px;font-weight:bold;overflow-wrap:anywhere}
+.artist{color:#91adbd;margin-top:9px}
+button{background:#48e5ff;color:#03101a;border:0;border-radius:25px;
+padding:13px 20px;font-weight:bold;cursor:pointer;margin-top:16px}
+button:disabled{opacity:.5}
+.small{font-size:13px;color:#91adbd;line-height:1.6}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:500px){.track{align-items:flex-start;flex-direction:column}
+.art{width:100%;height:auto;aspect-ratio:1}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>J.A.R.V.I.S.</h1>
+<div class="status">● SYSTEM ONLINE</div>
+</header>
+
+<div class="clock" id="clock">00:00</div>
+<div class="date" id="date"></div>
+
+<section class="panel">
+<div class="label">♫ NOW PLAYING</div>
+<div class="track">
+<img class="art" id="art"
+src="https://placehold.co/300x300/102333/48e5ff?text=JARVIS"
+alt="Album artwork">
+<div>
+<div class="song" id="song">Awaiting Spotify</div>
+<div class="artist" id="artist">Connect your account to begin</div>
+<button id="connect">CONNECT SPOTIFY</button>
+<p class="small" id="message">
+Your phone plays the music. Jarvis displays the track here.
+</p>
+</div>
+</div>
+</section>
+
+<div class="grid">
+<section class="panel">
+<div class="label">SYSTEM</div>
+<p>Dashboard: <span class="status">ONLINE</span></p>
+<p class="small">Fire HD 8 · Jarvis interface</p>
+</section>
+<section class="panel">
+<div class="label">MTB PROJECTS</div>
+<p>Mondraker Foxy RR</p>
+<p class="small">Bike maintenance and ride planning</p>
+</section>
+</div>
+</main>
+
+<script>
+function updateClock(){
+ const now=new Date();
+ document.getElementById('clock').textContent=
+ now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+ document.getElementById('date').textContent=
+ now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+}
+updateClock();
+setInterval(updateClock,1000);
+
+// Spotify connection will be configured in the next step.
+document.getElementById('connect').addEventListener('click',()=>{
+ document.getElementById('message').textContent=
+ 'Spotify setup is next. We will connect your account securely.';
+});
+</script>
+</body>
+</html>
+
