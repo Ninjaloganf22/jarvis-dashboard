@@ -130,6 +130,25 @@ input[type=range]{accent-color:var(--cyan)}
 <div class="date" id="date"></div>
 <div class="small" style="margin-top:16px;letter-spacing:2px;color:#56899a">PERSONAL ASSISTANT INTERFACE <span style="color:#ffb84d">/ MK-01</span></div>
 
+<section class="panel" id="weather-panel">
+  <div class="weather-top">
+    <div>
+      <div class="label">LIVE WEATHER</div>
+      <p class="small" id="weather-location" style="margin-top:10px">Loading local forecast…</p>
+    </div>
+    <div class="small" id="weather-updated">CONNECTING TO METEO</div>
+  </div>
+  <form class="weather-search" id="weather-form">
+    <input id="weather-city" type="text" value="Swindon" aria-label="Weather location" placeholder="Enter town or city" autocomplete="off">
+    <button type="submit">GET WEATHER</button>
+    <button type="button" class="secondary" id="weather-locate">USE MY LOCATION</button>
+  </form>
+  <div id="weather-content" aria-live="polite">
+    <div class="weather-current"><div class="weather-icon">⌁</div><div><div class="weather-temp">--°</div><div class="weather-desc">Fetching conditions…</div></div></div>
+  </div>
+  <p class="small weather-note">Forecast updates automatically. <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" style="color:#48e5ff">Weather data by Open-Meteo</a></p>
+</section>
+
 <section class="panel">
 <div class="label">♫ NOW PLAYING</div>
 <div class="track">
@@ -160,24 +179,7 @@ Your phone plays the music. Jarvis displays the track here.
 </section>
 
 
-<section class="panel" id="weather-panel">
-  <div class="weather-top">
-    <div>
-      <div class="label">LIVE WEATHER</div>
-      <p class="small" id="weather-location" style="margin-top:10px">Loading local forecast…</p>
-    </div>
-    <div class="small" id="weather-updated">CONNECTING TO METEO</div>
-  </div>
-  <form class="weather-search" id="weather-form">
-    <input id="weather-city" type="text" value="Swindon" aria-label="Weather location" placeholder="Enter town or city" autocomplete="off">
-    <button type="submit">GET WEATHER</button>
-    <button type="button" class="secondary" id="weather-locate">USE MY LOCATION</button>
-  </form>
-  <div id="weather-content" aria-live="polite">
-    <div class="weather-current"><div class="weather-icon">⌁</div><div><div class="weather-temp">--°</div><div class="weather-desc">Fetching conditions…</div></div></div>
-  </div>
-  <p class="small weather-note">Forecast updates automatically. <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" style="color:#48e5ff">Weather data by Open-Meteo</a></p>
-</section>
+
 
 <div class="grid">
 <section class="panel">
