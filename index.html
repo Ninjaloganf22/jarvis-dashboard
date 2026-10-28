@@ -27,6 +27,12 @@ button{background:#48e5ff;color:#03101a;border:0;border-radius:25px;
 padding:13px 20px;font-weight:bold;cursor:pointer;margin-top:16px}
 button:disabled{opacity:.5}
 .small{font-size:13px;color:#91adbd;line-height:1.6}
+.controls{margin-top:18px;max-width:420px}
+.control-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.control-row button{margin-top:0;min-width:54px}
+button.secondary{background:#132638;color:#dffaff;border:1px solid #246075}
+.volume-row{display:flex;align-items:center;gap:12px;margin-top:16px;color:#91adbd;font-size:13px}
+input[type=range]{width:100%;accent-color:#48e5ff}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:500px){.track{align-items:flex-start;flex-direction:column}
 .art{width:100%;height:auto;aspect-ratio:1}.grid{grid-template-columns:1fr}}
@@ -52,6 +58,18 @@ alt="Album artwork">
 <div class="song" id="song">Awaiting Spotify</div>
 <div class="artist" id="artist">Connect your account to begin</div>
 <button id="connect">CONNECT SPOTIFY</button>
+<div class="controls">
+<div class="control-row">
+<button class="secondary" id="previous" aria-label="Previous track" disabled>⏮</button>
+<button id="playpause" aria-label="Play or pause" disabled>▶ PLAY</button>
+<button class="secondary" id="next" aria-label="Next track" disabled>⏭</button>
+</div>
+<div class="volume-row">
+<label for="volume">VOLUME</label>
+<input id="volume" type="range" min="0" max="100" value="50" disabled>
+<span id="volume-value">—</span>
+</div>
+</div>
 <p class="small" id="message">
 Your phone plays the music. Jarvis displays the track here.
 </p>
@@ -87,7 +105,7 @@ setInterval(updateClock,1000);
 // Spotify Authorization Code with PKCE — no client secret in this public page.
 const SPOTIFY_CLIENT_ID = 'bce19036b4474cf2a679cca1412e07c6';
 const REDIRECT_URI = 'https://ninjaloganf22.github.io/jarvis-dashboard/';
-const SCOPES = 'user-read-currently-playing user-read-playback-state';
+const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
 const connectButton = document.getElementById('connect');
 const message = document.getElementById('message');
 const songEl = document.getElementById('song');
@@ -167,22 +185,96 @@ async function getAccessToken(){
  localStorage.removeItem('jarvis_spotify_access_token');
  return null;
 }
+const playPauseButton=document.getElementById('playpause');
+const previousButton=document.getElementById('previous');
+const nextButton=document.getElementById('next');
+const volumeSlider=document.getElementById('volume');
+const volumeValue=document.getElementById('volume-value');
+let isPlaying=false;
+let currentVolume=50;
+function setControlsEnabled(enabled){
+ playPauseButton.disabled=!enabled;
+ previousButton.disabled=!enabled;
+ nextButton.disabled=!enabled;
+ volumeSlider.disabled=!enabled;
+}
+async function spotifyCommand(path,method='PUT',body=null){
+ const token=await getAccessToken();
+ if(!token) throw new Error('Please reconnect Spotify');
+ const options={method,headers:{Authorization:'Bearer '+token}};
+ if(body!==null){
+  options.headers['Content-Type']='application/json';
+  options.body=JSON.stringify(body);
+ }
+ const response=await fetch('https://api.spotify.com/v1/me/player'+path,options);
+ if(!response.ok && response.status!==204) {
+  if(response.status===401) localStorage.removeItem('jarvis_spotify_access_token');
+  let detail='';
+  try{const data=await response.json();detail=data.error&&data.error.message?data.error.message:'';}catch(e){}
+  throw new Error(detail||'Spotify returned '+response.status);
+ }
+}
+async function runSpotifyCommand(action){
+ try{
+  if(action==='toggle'){
+   await spotifyCommand(isPlaying?'/pause':'/play','PUT');
+   isPlaying=!isPlaying;
+  }else if(action==='next'){
+   await spotifyCommand('/next','POST');
+  }else if(action==='previous'){
+   await spotifyCommand('/previous','POST');
+  }else if(action==='volume'){
+   await spotifyCommand('/volume?volume_percent='+encodeURIComponent(currentVolume),'PUT');
+  }
+  message.textContent='Command sent to Spotify.';
+  setTimeout(loadNowPlaying,700);
+ }catch(e){
+  message.textContent=e.message.includes('Premium')?'Spotify playback controls require Spotify Premium.':e.message.includes('No active device')?'Open Spotify on a device and start playback, then try again.':'Could not control Spotify. Make sure Spotify is open on an active device and reconnect if asked.';
+ }
+}
+playPauseButton.addEventListener('click',()=>runSpotifyCommand('toggle'));
+nextButton.addEventListener('click',()=>runSpotifyCommand('next'));
+previousButton.addEventListener('click',()=>runSpotifyCommand('previous'));
+volumeSlider.addEventListener('input',()=>{
+ currentVolume=Number(volumeSlider.value);
+ volumeValue.textContent=currentVolume+'%';
+});
+volumeSlider.addEventListener('change',()=>runSpotifyCommand('volume'));
+
 async function loadNowPlaying(){
  const token=await getAccessToken();
  if(!token){
   songEl.textContent='Awaiting Spotify';
   artistEl.textContent='Connect your account to begin';
   connectButton.textContent='CONNECT SPOTIFY';
-  message.textContent='Tap Connect Spotify and approve access to your playback information.';
+  setControlsEnabled(false);
+  message.textContent='Tap Connect Spotify and approve access to playback and control permissions.';
   return;
  }
  try{
+  const stateResponse=await fetch('https://api.spotify.com/v1/me/player',{
+   headers:{Authorization:'Bearer '+token}
+  });
+  if(stateResponse.ok){
+   const state=await stateResponse.json();
+   isPlaying=!!state.is_playing;
+   currentVolume=state.device&&typeof state.device.volume_percent==='number'?state.device.volume_percent:currentVolume;
+   playPauseButton.textContent=isPlaying?'❚❚ PAUSE':'▶ PLAY';
+   volumeSlider.value=String(currentVolume);
+   volumeValue.textContent=currentVolume+'%';
+   setControlsEnabled(true);
+  }else if(stateResponse.status===204){
+   setControlsEnabled(true);
+  }else{
+   setControlsEnabled(false);
+  }
   const response=await fetch('https://api.spotify.com/v1/me/player/currently-playing',{
    headers:{Authorization:'Bearer '+token}
   });
   if(response.status===204){
    songEl.textContent='Nothing playing';
    artistEl.textContent='Start playing something on Spotify';
+   connectButton.textContent='DISCONNECT';
    return;
   }
   if(response.status===401){
@@ -202,6 +294,8 @@ async function loadNowPlaying(){
    artEl.src=data.item.album.images[0].url;
   }
   connectButton.textContent='DISCONNECT';
+  isPlaying=!!data.is_playing;
+  playPauseButton.textContent=isPlaying?'❚❚ PAUSE':'▶ PLAY';
   message.textContent=data.is_playing?'Now playing on Spotify':'Spotify is paused';
  }catch(e){
   message.textContent='Could not load playback. Open Spotify and try again.';
@@ -216,6 +310,7 @@ connectButton.addEventListener('click',()=>{
   artistEl.textContent='Connect your account to begin';
   artEl.src='https://placehold.co/300x300/102333/48e5ff?text=JARVIS';
   connectButton.textContent='CONNECT SPOTIFY';
+  setControlsEnabled(false);
   message.textContent='Spotify disconnected from this dashboard.';
  }else{
   connectSpotify();
