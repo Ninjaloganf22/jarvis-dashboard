@@ -36,6 +36,64 @@ input[type=range]{width:100%;accent-color:#48e5ff}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:500px){.track{align-items:flex-start;flex-direction:column}
 .art{width:100%;height:auto;aspect-ratio:1}.grid{grid-template-columns:1fr}}
+
+/* JARVIS HUD visual layer */
+:root{--cyan:#48e5ff;--cyan-dim:#176477;--amber:#ffb84d;--glass:rgba(5,18,31,.82)}
+body{
+ background:
+  radial-gradient(ellipse at 50% -20%,rgba(13,100,135,.32),transparent 55%),
+  linear-gradient(rgba(37,133,157,.055) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(37,133,157,.055) 1px,transparent 1px),
+  #02060d;
+ background-size:auto,32px 32px,32px 32px,auto;
+ color:#e4fbff;min-height:100vh;
+}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
+ background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(72,229,255,.025) 4px 5px);z-index:10}
+main{max-width:1100px;padding:22px;position:relative}
+header{border-bottom:1px solid var(--cyan-dim);padding:0 0 16px;gap:15px}
+h1{font-size:clamp(21px,4vw,30px);letter-spacing:7px;text-shadow:0 0 18px rgba(72,229,255,.5);margin:0}
+header:before{content:"STARK INDUSTRIES // PERSONAL ASSISTANT";display:block;position:absolute;top:0;right:22px;
+ transform:translateY(-130%);font-size:9px;letter-spacing:2px;color:#56899a}
+.status{color:#76ffd0;letter-spacing:1.5px;text-shadow:0 0 10px rgba(89,255,176,.35)}
+.clock{font-size:clamp(54px,13vw,104px);letter-spacing:2px;line-height:1;margin:35px 0 10px;
+ color:#e8fcff;text-shadow:0 0 24px rgba(72,229,255,.23);font-variant-numeric:tabular-nums}
+.date{font-size:11px;color:#76b7c8;letter-spacing:4px}
+.panel{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(10,31,48,.92),rgba(3,12,22,.94));
+ border:1px solid #1b6679;border-radius:5px;padding:22px;margin-top:20px;
+ box-shadow:inset 0 0 22px rgba(17,115,145,.08),0 0 18px rgba(0,0,0,.18)}
+.panel:before{content:"";position:absolute;top:0;left:0;width:62px;height:2px;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+.panel:after{content:"";position:absolute;bottom:0;right:0;width:28px;height:2px;background:var(--cyan-dim)}
+.label{font-size:11px;letter-spacing:4px;color:var(--cyan);display:flex;align-items:center;gap:10px}
+.label:before{content:"";display:inline-block;width:7px;height:7px;border:1px solid var(--cyan);transform:rotate(45deg);box-shadow:0 0 8px rgba(72,229,255,.4)}
+.track{align-items:center;gap:24px}
+.art{width:clamp(112px,22vw,190px);height:clamp(112px,22vw,190px);border-radius:2px;border:1px solid #26758a;
+ box-shadow:0 0 20px rgba(72,229,255,.12);position:relative}
+.song{font-size:clamp(20px,3.4vw,30px);letter-spacing:.3px}
+.artist{color:#8cb9c8;font-size:14px}
+button{background:var(--cyan);color:#021019;border-radius:2px;padding:12px 17px;letter-spacing:1.3px;
+ font-size:11px;box-shadow:0 0 16px rgba(72,229,255,.13);transition:filter .15s,transform .15s}
+button:hover:not(:disabled){filter:brightness(1.13);transform:translateY(-1px)}
+button:disabled{opacity:.32;box-shadow:none}
+button.secondary{background:rgba(9,39,55,.9);color:#bdf7ff;border:1px solid #26758a}
+.control-row button{min-width:62px}
+.controls{max-width:450px}
+.volume-row{color:#7cb2c1;letter-spacing:1.5px;font-size:10px}
+input[type=range]{accent-color:var(--cyan)}
+.small{color:#81aebc;font-size:12px}
+.grid{gap:16px}
+.grid .panel p:not(.small){font-size:17px;letter-spacing:.4px}
+.grid .panel .small{margin-bottom:0}
+#message{min-height:18px}
+@media(max-width:500px){
+ main{padding:18px}
+ header:before{font-size:7px;letter-spacing:1px;right:18px}
+ h1{letter-spacing:4px}
+ .panel{padding:17px}
+ .track{gap:16px}
+ .controls{width:100%}
+ .control-row button{flex:1}
+}
 </style>
 </head>
 <body>
@@ -47,6 +105,7 @@ input[type=range]{width:100%;accent-color:#48e5ff}
 
 <div class="clock" id="clock">00:00</div>
 <div class="date" id="date"></div>
+<div class="small" style="margin-top:16px;letter-spacing:2px;color:#56899a">PERSONAL ASSISTANT INTERFACE <span style="color:#ffb84d">/ MK-01</span></div>
 
 <section class="panel">
 <div class="label">♫ NOW PLAYING</div>
