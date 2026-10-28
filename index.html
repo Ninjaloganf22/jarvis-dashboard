@@ -220,9 +220,11 @@ const weatherCodes={
   77:['Snow grains','🌨️'],80:['Rain showers','🌦️'],81:['Showers','🌧️'],82:['Heavy showers','⛈️'],85:['Snow showers','🌨️'],
   86:['Heavy snow showers','🌨️'],95:['Thunderstorm','⛈️'],96:['Thunderstorm with hail','⛈️'],99:['Severe thunderstorm','⛈️']
 };
+let weatherCoordinates=null;
 function weatherInfo(code){return weatherCodes[code]||['Conditions unavailable','🌡️'];}
 function weatherEscape(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 async function loadWeatherForCoordinates(latitude,longitude,place){
+  weatherCoordinates={latitude,longitude,place};
   weatherUpdated.textContent='UPDATING…';
   weatherContent.innerHTML='<p class="small">Receiving live conditions and forecast…</p>';
   try{
@@ -299,7 +301,7 @@ weatherLocateButton.addEventListener('click',()=>{
   },{enableHighAccuracy:false,timeout:10000,maximumAge:300000});
 });
 searchWeatherPlace(weatherCityInput.value);
-setInterval(()=>searchWeatherPlace(weatherCityInput.value),30*60*1000);
+setInterval(()=>{if(weatherCoordinates){const p=weatherCoordinates;loadWeatherForCoordinates(p.latitude,p.longitude,p.place);}else{searchWeatherPlace(weatherCityInput.value);}},30*60*1000);
 
 // Spotify Authorization Code with PKCE — no client secret in this public page.
 const SPOTIFY_CLIENT_ID = 'bce19036b4474cf2a679cca1412e07c6';
