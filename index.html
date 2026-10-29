@@ -808,9 +808,23 @@ chatForm.addEventListener("submit", async (event) => {
 (function(){
  const toolbar=document.createElement('div');
  toolbar.id='design-toolbar';
- toolbar.innerHTML='<span id="design-hint">LAYOUT DESIGNER · changes save on this device</span><button id="design-toggle" type="button">✎ DESIGN MODE</button><button id="design-save" type="button" class="secondary">SAVE LAYOUT</button><button id="design-reset" type="button" class="secondary">RESET</button>';
+ toolbar.innerHTML='<span id="design-hint">LAYOUT DESIGNER · changes save on this device</span><button id="design-toggle" type="button">✎ DESIGN MODE</button><button id="design-save" type="button" class="secondary">SAVE LAYOUT</button><button id="design-reset" type="button" class="secondary">RESET</button><button id="design-hide" type="button" class="secondary">QUICK HIDE ✕</button>';
  document.body.appendChild(toolbar);
  const toggle=document.getElementById('design-toggle');
+ const hideButton=document.getElementById('design-hide');
+ const hiddenKey='jarvis_design_toolbar_hidden_v1';
+ const showButton=document.createElement('button');
+ showButton.type='button';showButton.id='design-show';showButton.textContent='✎ SHOW DESIGN';
+ showButton.style.cssText='position:fixed;z-index:1001;right:10px;bottom:10px;margin:0;padding:10px 12px;font-size:10px;display:none';
+ document.body.appendChild(showButton);
+ function setToolbarHidden(hidden){
+  toolbar.style.display=hidden?'none':'flex';
+  showButton.style.display=hidden?'block':'none';
+  localStorage.setItem(hiddenKey,hidden?'1':'0');
+ }
+ hideButton.addEventListener('click',()=>setToolbarHidden(true));
+ showButton.addEventListener('click',()=>setToolbarHidden(false));
+ if(localStorage.getItem(hiddenKey)==='1')setToolbarHidden(true);
  const hint=document.getElementById('design-hint');
  const layoutItems=[
   ['header',document.querySelector('main>header')],
