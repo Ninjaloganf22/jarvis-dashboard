@@ -186,6 +186,27 @@ input[type=range]{accent-color:var(--cyan)}
   .grid .panel{margin-top:8px;padding:8px 12px}
 }
 
+
+/* JARVIS conversation panel */
+#jarvis-chat{margin-top:20px}
+#chat-log{display:flex;flex-direction:column;gap:10px;max-height:260px;overflow:auto;margin-top:14px}
+.chat-bubble{padding:11px 13px;border:1px solid #16485b;background:rgba(2,12,22,.7);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45;font-size:13px}
+.chat-bubble.user{border-color:#26758a;color:#dffaff;margin-left:12%}
+.chat-bubble.jarvis{margin-right:8%}
+.chat-compose{display:flex;gap:8px;margin-top:12px}
+.chat-compose textarea{flex:1;min-width:0;resize:vertical;min-height:44px;max-height:110px;background:#06111d;color:#dffaff;border:1px solid #26758a;border-radius:2px;padding:12px;font:inherit}
+.chat-compose button{margin-top:0}
+#chat-status{margin-top:8px}
+@media(min-width:700px) and (max-height:950px){
+ main{grid-template-areas:"header header" "clock clock" "date date" "subtitle subtitle" "weather spotify" "bottom bottom" "chat chat"}
+ #jarvis-chat{grid-area:chat;margin-top:10px;padding:12px 14px}
+ #chat-log{max-height:150px;margin-top:8px;gap:6px}
+ .chat-bubble{padding:8px 10px;font-size:12px}
+ .chat-compose{margin-top:8px}
+ .chat-compose textarea{min-height:38px;padding:9px;font-size:12px}
+ .chat-compose button{padding:9px 12px}
+}
+
 </style>
 </head>
 <body>
@@ -249,6 +270,20 @@ Your phone plays the music. Jarvis displays the track here.
 
 
 
+
+
+<section class="panel" id="jarvis-chat">
+  <div class="label">TALK TO J.A.R.V.I.S.</div>
+  <p class="small">AI assistant · Bike projects · Plans and questions</p>
+  <div id="chat-log" aria-live="polite">
+    <div class="chat-bubble jarvis">Systems ready. Send me a message to begin.</div>
+  </div>
+  <form id="chat-form" class="chat-compose">
+    <textarea id="chat-input" maxlength="4000" rows="2" placeholder="Ask J.A.R.V.I.S. something…" aria-label="Message J.A.R.V.I.S." required></textarea>
+    <button id="chat-send" type="submit">SEND</button>
+  </form>
+  <p id="chat-status" class="small">AI connection ready to test.</p>
+</section>
 
 <div class="grid">
 <section class="panel">
@@ -647,6 +682,54 @@ connectButton.addEventListener('click',()=>{
  await loadNowPlaying();
  setInterval(loadNowPlaying,15000);
 })();
+
+
+// J.A.R.V.I.S. AI chat via the secure Cloudflare Worker.
+const JARVIS_API_URL = "https://jarvis-ai.logan-forrest2204q.workers.dev/";
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+const chatLog = document.getElementById("chat-log");
+const chatStatus = document.getElementById("chat-status");
+const chatSend = document.getElementById("chat-send");
+const chatHistory = [];
+function addChatBubble(role, content) {
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble " + (role === "user" ? "user" : "jarvis");
+  bubble.textContent = content;
+  chatLog.appendChild(bubble);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+chatForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const messageText = chatInput.value.trim();
+  if (!messageText || chatSend.disabled) return;
+  addChatBubble("user", messageText);
+  chatInput.value = "";
+  chatSend.disabled = true;
+  chatStatus.textContent = "J.A.R.V.I.S. is thinking…";
+  try {
+    const response = await fetch(JARVIS_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: messageText, history: chatHistory })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.details || data.error || "Request failed (" + response.status + ")");
+    if (typeof data.reply !== "string") throw new Error("The AI returned an unexpected response.");
+    addChatBubble("assistant", data.reply);
+    chatHistory.push({ role: "user", content: messageText });
+    chatHistory.push({ role: "assistant", content: data.reply });
+    while (chatHistory.length > 10) chatHistory.splice(0, 2);
+    chatStatus.textContent = "CONNECTED · J.A.R.V.I.S. ONLINE";
+  } catch (error) {
+    addChatBubble("assistant", "I couldn't connect just now. " + (error.message || "Please check the Worker settings and try again."));
+    chatStatus.textContent = "CONNECTION ERROR · CHECK WORKER AND GROQ SECRET";
+  } finally {
+    chatSend.disabled = false;
+    chatInput.focus();
+  }
+});
+
 </script>
 </body>
 </html>
