@@ -56,8 +56,30 @@ public class MainActivity extends Activity {
             }
         });
         setContentView(webView);
-        if (savedInstanceState == null) webView.loadUrl(DASHBOARD);
-        else webView.restoreState(savedInstanceState);
+        if (savedInstanceState == null) {
+            if (!handleSpotifyCallback(getIntent())) webView.loadUrl(DASHBOARD);
+        } else {
+            webView.restoreState(savedInstanceState);
+            handleSpotifyCallback(getIntent());
+        }
+    }
+
+    private boolean handleSpotifyCallback(Intent intent) {
+        if (intent == null || intent.getData() == null) return false;
+        Uri data = intent.getData();
+        if (!"com.ninjalogan.jarvis".equals(data.getScheme()) ||
+                !"callback".equals(data.getHost())) return false;
+
+        String query = data.getEncodedQuery();
+        webView.loadUrl(DASHBOARD + (query == null || query.isEmpty() ? "" : "?" + query));
+        return true;
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleSpotifyCallback(intent);
     }
 
     @Override
