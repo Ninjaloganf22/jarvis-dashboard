@@ -141,7 +141,7 @@ input[type=range]{accent-color:var(--cyan)}
   #date{grid-area:date;font-size:10px;letter-spacing:2px}
   main > .small[style*="PERSONAL ASSISTANT"]{grid-area:subtitle;margin-top:6px!important;font-size:9px}
   #weather-panel{grid-area:weather;margin-top:10px;padding:14px;min-width:0}
-  main > section.panel:not(#weather-panel){grid-area:spotify;margin-top:10px;padding:14px;min-width:0}
+  #spotify-panel{grid-area:spotify;display:block;visibility:visible;opacity:1;margin-top:10px;padding:14px;min-width:0}
   .weather-search{margin-top:8px;gap:6px}
   .weather-search input{padding:9px;font-size:12px}
   .weather-search button{padding:9px 10px;font-size:9px}
@@ -178,7 +178,7 @@ input[type=range]{accent-color:var(--cyan)}
 @media (min-width:700px) and (max-height:760px){
   main{padding-top:8px;padding-bottom:8px}
   .clock{font-size:46px;margin-top:6px}
-  #weather-panel,main > section.panel:not(#weather-panel){padding:10px;margin-top:8px}
+  #weather-panel,#spotify-panel{padding:10px;margin-top:8px}
   .weather-current{margin:7px 0}
   .weather-stats{margin-top:7px}
   .forecast{margin-top:7px}
@@ -254,7 +254,7 @@ body.design-mode #design-toolbar{border-color:#ffb84d}
   <p class="small weather-note">Forecast updates automatically. <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" style="color:#48e5ff">Weather data by Open-Meteo</a></p>
 </section>
 
-<section class="panel">
+<section class="panel" id="spotify-panel">
 <div class="label">♫ NOW PLAYING</div>
 <div class="track">
 <img class="art" id="art"
@@ -817,7 +817,7 @@ chatForm.addEventListener("submit", async (event) => {
   ['date',document.getElementById('date')],
   ['subtitle',document.querySelector('main>.small[style*="PERSONAL ASSISTANT"]')],
   ['weather',document.getElementById('weather-panel')],
-  ['spotify',document.querySelector('main>section.panel:not(#weather-panel):not(#jarvis-chat)')],
+  ['spotify',document.getElementById('spotify-panel')],
   ['chat',document.getElementById('jarvis-chat')],
   ['projects',document.querySelector('main>.grid')]
  ].filter(item=>item[1]);
