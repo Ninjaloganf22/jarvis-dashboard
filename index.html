@@ -275,6 +275,12 @@ Your phone plays the music. Jarvis displays the track here.
 <section class="panel" id="jarvis-chat">
   <div class="label">TALK TO J.A.R.V.I.S.</div>
   <p class="small">AI assistant · Bike projects · Plans and questions</p>
+  <form id="memory-login-form" class="chat-compose" style="margin-top:10px">
+    <input id="memory-password" type="password" autocomplete="current-password" maxlength="500" placeholder="Cloud memory passphrase" aria-label="Cloud memory passphrase" required style="flex:1;min-width:0;background:#06111d;color:#dffaff;border:1px solid #26758a;border-radius:2px;padding:12px;font:inherit">
+    <button id="memory-login" type="submit">MEMORY LOGIN</button>
+    <button id="memory-logout" type="button" class="secondary">LOG OUT</button>
+  </form>
+  <p id="memory-status" class="small" style="margin-top:8px">Cloud memory locked · Log in on each device to sync memories.</p>
   <div id="chat-log" aria-live="polite">
     <div class="chat-bubble jarvis">Systems ready. Send me a message to begin.</div>
   </div>
@@ -692,6 +698,47 @@ const chatLog = document.getElementById("chat-log");
 const chatStatus = document.getElementById("chat-status");
 const chatSend = document.getElementById("chat-send");
 const chatHistory = [];
+const memoryLoginForm = document.getElementById("memory-login-form");
+const memoryPassword = document.getElementById("memory-password");
+const memoryLoginButton = document.getElementById("memory-login");
+const memoryLogoutButton = document.getElementById("memory-logout");
+const memoryStatus = document.getElementById("memory-status");
+let memoryToken = localStorage.getItem("jarvis_memory_token") || "";
+function updateMemoryStatus(text) {
+  memoryStatus.textContent = text;
+}
+if (memoryToken) updateMemoryStatus("Cloud memory token saved on this device · Ready to sync.");
+memoryLoginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const password = memoryPassword.value;
+  if (!password || memoryLoginButton.disabled) return;
+  memoryLoginButton.disabled = true;
+  updateMemoryStatus("Signing in to cloud memory…");
+  try {
+    const response = await fetch(JARVIS_API_URL + "login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+    const data = await response.json();
+    if (!response.ok || typeof data.token !== "string") {
+      throw new Error(data.error || "Login failed. Check your passphrase.");
+    }
+    memoryToken = data.token;
+    localStorage.setItem("jarvis_memory_token", memoryToken);
+    memoryPassword.value = "";
+    updateMemoryStatus("CLOUD MEMORY CONNECTED · This device is signed in for 7 days.");
+  } catch (error) {
+    updateMemoryStatus(error.message || "Could not sign in to cloud memory.");
+  } finally {
+    memoryLoginButton.disabled = false;
+  }
+});
+memoryLogoutButton.addEventListener("click", () => {
+  memoryToken = "";
+  localStorage.removeItem("jarvis_memory_token");
+  updateMemoryStatus("Cloud memory logged out on this device. Saved cloud memories remain stored.");
+});
 function addChatBubble(role, content) {
   const bubble = document.createElement("div");
   bubble.className = "chat-bubble " + (role === "user" ? "user" : "jarvis");
@@ -710,10 +757,18 @@ chatForm.addEventListener("submit", async (event) => {
   try {
     const response = await fetch(JARVIS_API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(memoryToken ? { "Authorization": "Bearer " + memoryToken } : {})
+      },
       body: JSON.stringify({ message: messageText, history: chatHistory })
     });
     const data = await response.json();
+    if (response.status === 401 && memoryToken) {
+      memoryToken = "";
+      localStorage.removeItem("jarvis_memory_token");
+      updateMemoryStatus("Login expired · Sign in again to use cloud memory.");
+    }
     if (!response.ok) throw new Error(data.details || data.error || "Request failed (" + response.status + ")");
     if (typeof data.reply !== "string") throw new Error("The AI returned an unexpected response.");
     addChatBubble("assistant", data.reply);
