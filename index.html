@@ -207,6 +207,21 @@ input[type=range]{accent-color:var(--cyan)}
  .chat-compose button{padding:9px 12px}
 }
 
+
+/* Touch-friendly layout designer */
+#design-toolbar{position:fixed;z-index:1000;right:10px;bottom:10px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;background:rgba(2,10,18,.96);border:1px solid #26758a;padding:8px;box-shadow:0 0 18px #000}
+#design-toolbar button{margin:0;padding:10px 12px;font-size:10px;touch-action:manipulation}
+#design-hint{color:#9bc8d5;font-size:10px;max-width:180px;line-height:1.3}
+.layout-handle{display:none;position:absolute;z-index:50;top:5px;right:5px;background:#ffb84d!important;color:#101820!important;padding:8px 10px!important;margin:0!important;cursor:move;touch-action:none;font-size:10px!important}
+body.design-mode [data-layout-id]{outline:1px dashed #ffb84d;outline-offset:2px;resize:both;overflow:auto;min-width:110px;min-height:55px;max-width:none}
+body.design-mode [data-layout-id]>.layout-handle{display:block}
+body.design-mode [data-layout-id] .label{padding-right:82px}
+body.design-mode #design-toolbar{border-color:#ffb84d}
+@media(max-width:699px){
+ #design-toolbar{left:8px;right:8px;bottom:8px;justify-content:center}
+ #design-hint{max-width:125px}
+}
+
 </style>
 </head>
 <body>
@@ -786,6 +801,87 @@ chatForm.addEventListener("submit", async (event) => {
 });
 
 </script>
+
+<script>
+// Simple touch-friendly layout editor. Layout choices are saved in this browser.
+(function(){
+ const toolbar=document.createElement('div');
+ toolbar.id='design-toolbar';
+ toolbar.innerHTML='<span id="design-hint">LAYOUT DESIGNER · changes save on this device</span><button id="design-toggle" type="button">✎ DESIGN MODE</button><button id="design-save" type="button" class="secondary">SAVE LAYOUT</button><button id="design-reset" type="button" class="secondary">RESET</button>';
+ document.body.appendChild(toolbar);
+ const toggle=document.getElementById('design-toggle');
+ const hint=document.getElementById('design-hint');
+ const layoutItems=[
+  ['header',document.querySelector('main>header')],
+  ['clock',document.getElementById('clock')],
+  ['date',document.getElementById('date')],
+  ['subtitle',document.querySelector('main>.small[style*="PERSONAL ASSISTANT"]')],
+  ['weather',document.getElementById('weather-panel')],
+  ['spotify',document.querySelector('main>section.panel:not(#weather-panel):not(#jarvis-chat)')],
+  ['chat',document.getElementById('jarvis-chat')],
+  ['projects',document.querySelector('main>.grid')]
+ ].filter(item=>item[1]);
+ const STORE_KEY='jarvis_layout_v1';
+ function applySaved(){
+  let saved={};
+  try{saved=JSON.parse(localStorage.getItem(STORE_KEY)||'{}')||{};}catch(e){}
+  layoutItems.forEach(([id,el])=>{
+   el.dataset.layoutId=id;
+   const s=saved[id];if(!s)return;
+   if(Number.isFinite(s.w))el.style.width=s.w+'px';
+   if(Number.isFinite(s.h))el.style.height=s.h+'px';
+   if(Number.isFinite(s.x)&&Number.isFinite(s.y)){el.style.transform='translate('+s.x+'px,'+s.y+'px)';el.dataset.dragX=s.x;el.dataset.dragY=s.y;}
+  });
+ }
+ function saveLayout(){
+  const saved={};
+  layoutItems.forEach(([id,el])=>{
+   const r=el.getBoundingClientRect();
+   const w=parseFloat(el.style.width),h=parseFloat(el.style.height);
+   const x=Number(el.dataset.dragX||0),y=Number(el.dataset.dragY||0);
+   if(Number.isFinite(w))saved[id]={...(saved[id]||{}),w};
+   if(Number.isFinite(h))saved[id]={...(saved[id]||{}),h};
+   saved[id]={...(saved[id]||{}),x,y};
+  });
+  localStorage.setItem(STORE_KEY,JSON.stringify(saved));
+  hint.textContent='LAYOUT SAVED ✓ · this browser';
+ }
+ function enableDrag(el){
+  const handle=document.createElement('button');
+  handle.type='button';handle.className='layout-handle';handle.textContent='↕ MOVE';
+  handle.setAttribute('aria-label','Drag to move this section');
+  el.appendChild(handle);
+  let startX=0,startY=0,baseX=0,baseY=0;
+  handle.addEventListener('pointerdown',e=>{
+   if(!document.body.classList.contains('design-mode'))return;
+   e.preventDefault();handle.setPointerCapture(e.pointerId);
+   startX=e.clientX;startY=e.clientY;baseX=Number(el.dataset.dragX||0);baseY=Number(el.dataset.dragY||0);
+  });
+  handle.addEventListener('pointermove',e=>{
+   if(!document.body.classList.contains('design-mode')||!handle.hasPointerCapture(e.pointerId))return;
+   const x=baseX+e.clientX-startX,y=baseY+e.clientY-startY;
+   el.dataset.dragX=x;el.dataset.dragY=y;el.style.transform='translate('+x+'px,'+y+'px)';
+  });
+  handle.addEventListener('pointerup',()=>{if(document.body.classList.contains('design-mode'))saveLayout();});
+  handle.addEventListener('pointercancel',()=>{if(document.body.classList.contains('design-mode'))saveLayout();});
+ }
+ applySaved();
+ layoutItems.forEach(([,el])=>enableDrag(el));
+ toggle.addEventListener('click',()=>{
+  const enabled=document.body.classList.toggle('design-mode');
+  toggle.textContent=enabled?'✓ FINISH DESIGN':'✎ DESIGN MODE';
+  hint.textContent=enabled?'Drag ↕ MOVE to reposition; drag a corner to resize.':'LAYOUT DESIGNER · changes save on this device';
+ });
+ document.getElementById('design-save').addEventListener('click',saveLayout);
+ document.getElementById('design-reset').addEventListener('click',()=>{
+  if(!confirm('Reset your J.A.R.V.I.S. layout to the original design?'))return;
+  localStorage.removeItem(STORE_KEY);
+  layoutItems.forEach(([,el])=>{el.style.width='';el.style.height='';el.style.transform='';delete el.dataset.dragX;delete el.dataset.dragY;});
+  hint.textContent='LAYOUT RESET · refresh if anything looks unusual';
+ });
+})();
+</script>
+
 </body>
 </html>
 
