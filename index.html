@@ -432,7 +432,8 @@ setInterval(()=>{if(weatherCoordinates){const p=weatherCoordinates;loadWeatherFo
 
 // Spotify Authorization Code with PKCE — no client secret in this public page.
 const SPOTIFY_CLIENT_ID = 'bce19036b4474cf2a679cca1412e07c6';
-const REDIRECT_URI = 'com.ninjalogan.jarvis://callback';
+const IS_JARVIS_ANDROID_APP = /; wv\)/i.test(navigator.userAgent);
+const REDIRECT_URI = IS_JARVIS_ANDROID_APP ? 'com.ninjalogan.jarvis://callback' : 'https://ninjaloganf22.github.io/jarvis-dashboard/';
 const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
 const connectButton = document.getElementById('connect');
 const message = document.getElementById('message');
@@ -683,7 +684,7 @@ connectButton.addEventListener('click',()=>{
  const error=params.get('error');
  if(error){
   message.textContent='Spotify login was cancelled or denied. Tap Connect Spotify to try again.';
-  history.replaceState({},document.title,REDIRECT_URI);
+  history.replaceState({},document.title,location.pathname);
   return;
  }
  if(code){
@@ -691,11 +692,11 @@ connectButton.addEventListener('click',()=>{
   message.textContent='Connecting to Spotify…';
   try{
    await exchangeCode(code);
-   history.replaceState({},document.title,REDIRECT_URI);
+   history.replaceState({},document.title,location.pathname);
    message.textContent='Spotify connected.';
   }catch(e){
    message.textContent='Spotify connection failed. Check the Client ID and redirect URI, then try again.';
-   history.replaceState({},document.title,REDIRECT_URI);
+   history.replaceState({},document.title,location.pathname);
   }finally{
    connectButton.disabled=false;
   }
